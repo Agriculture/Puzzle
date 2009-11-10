@@ -1,5 +1,3 @@
-package src;
-
 import puzzlelib.*;
 
 public class Main
@@ -80,9 +78,9 @@ public class Main
             if(!erg.isUnsolvable())
             {
                 if(Helper.isSolution(problem, erg.getSolution()))
-                    System.out.println("fÃ¼hrt wirklich zum Ziel");
+                    System.out.println("führt wirklich zum Ziel");
                 else
-                    System.out.println("Fehler: fÃ¼hrt nicht zum Ziel");
+                    System.out.println("Fehler: führt nicht zum Ziel");
             }
         }
         catch(Exception ex)
