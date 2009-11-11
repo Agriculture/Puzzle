@@ -13,13 +13,16 @@ import puzzlelib.*;
 public class MyPuzzleSolver implements IPuzzleSolver
 {
 	//the size of the border
-	// 1 -> 0-puzzle, 4 -> 3-puzzle, 9 -> 8-puzzle, 16 -> 15-puzzle, ...
+	// 1 -> 0-puzzle, 2 -> 3-puzzle, 3 -> 8-puzzle, 4 -> 15-puzzle, ...
 	private int size;
 	//iterating limit for iterative deepening search
-	private int currentWayLimit;
+	private int currentCostLimit;
 	//global input for solve(..)
 	private Heuristik heuristic;
 	private int[] problem;
+	private Node solution;
+
+	private enum Move{Up, Down, Left, Right};
      /**
      * LÃ¶st ein Puzzle-Problem bzw. versucht dies.
      * @param heuristik Die hierbei zu verwendende Heuristik
@@ -77,22 +80,44 @@ public class MyPuzzleSolver implements IPuzzleSolver
 
 	/**
 	 * iterative deepening seach
-	 * @param heuristik
 	 */
 	private void IDA(){
 		//init
-		currentWayLimit = 1;
+		currentCostLimit = 1;
 		List<Node> queue = new LinkedList<Node>();
 		Map<Integer, Integer> visitedStates = new HashMap<Integer, Integer>();
-		Node root = new Node(0, problem);
-		queue.add(root);
-		visitedStates.put(root.getState().hashCode(), root.getWayCost());
 
-		while(!queue.isEmpty()){
-			//TODO
+		//to be sure that we found something in the last iteration
+		Boolean newWays = true;
+		//break if we find something
+		Boolean foundSolution = true;
 
+		while(!foundSolution && newWays){
+			newWays = false;
+			Node root = new Node(null, problem);
+			queue.add(root);
+			visitedStates.put(root.getState().hashCode(), root.getCost());
+
+			while(!queue.isEmpty()){
+				//TODO entweder sortierte queue oder prüfen ob kleinstmögliches
+				Node node = queue.remove(0);
+				if(node.isSolution()){
+					solution = node;
+					foundSolution = true;
+				}
+
+				if(node.getCost() < currentCostLimit){
+					List<Move> moves = node.getMoves();
+					for(Move move : moves){
+						Node new = getNextNode(node, move)
+						queue.add(0, getNextNode(node, move));
+					}
+				}
+
+			}
+			currentCostLimit++;
+			System.err.println("currentCostLimit: "+currentCostLimit);
 		}
-
 	}
 
 	/**
@@ -112,9 +137,24 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		if( sizeDouble.floatValue() != 0)
 			return false;
 
-		sizeDouble = java.lang.Math.pow(sizeDouble, 2);
 		size = sizeDouble.intValue();
 		return true;
+	}
+
+	private Node getNextNode(Node parent, Move move){
+		int[] state = parent.getState();
+		int pos0 = parent.getPos0();
+		int posOld = 0;
+		switch(move){
+			case Up:	posOld = pos0 + size;	break;
+			case Down:	posOld = pos0 - size;	break;
+			case Right:	posOld = pos0 - 1;		break;
+			case Left:	posOld = pos0 + 1;		break;
+		}
+		int old = state[posOld-1];
+		state[posOld-1] = 0;
+		state[pos0-1]	= old;
+		return new Node(parent, state);
 	}
 
 	/**
@@ -125,13 +165,18 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		private int wayCost;
 		private int heuristicCost;
 		private int[] state;
+		private Integer pos0;
 
-		Node(int wayCost, int[] state){
-			this.parent = null;
-			this.wayCost = wayCost;
+		Node(Node parent, int[] state){
+			this.parent = parent;
+			if(parent == null)
+				this.wayCost = 0;
+			else
+				this.wayCost = parent.getWayCost() +1;
 			//TODO
 			this.heuristicCost = 0;
 			this.state = state;
+			this.pos0 = null;
 		}
 
 		void setParent(Node parent){
@@ -142,16 +187,24 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			return wayCost+heuristicCost;
 		}
 
-		int getWayCost(){
-			return wayCost;
-		}
-
 		Node getParent(){
 			return parent;
 		}
 
 		int[] getState(){
 			return state;
+		}
+
+		int getWayCost(){
+			return wayCost;
+		}
+
+		Boolean isSolution(){
+			for(int i=1; i<size; i++){
+				if(i != state[i-1])
+					return false;
+			}
+			return true;
 		}
 
 		public int compareTo(Object arg0) {
@@ -162,6 +215,35 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					return 0;
 				else
 					return 1;
+		}
+
+		private List<Move> getMoves() {
+			List<Move> moves = new LinkedList<Move>();
+			if(pos0 == null)
+				calcPos0();
+			if(!(pos0 >= size*(size-1)))
+				moves.add(Move.Up);
+			if(!(pos0 <= size))
+				moves.add(Move.Down);
+			if(!((pos0 % size) == 1))
+				moves.add(Move.Left);
+			if(!((pos0 % size) == (size-1) ))
+				moves.add(Move.Right);
+			return moves;
+		}
+
+		private void calcPos0(){
+			int i = 0;
+			while(pos0 == null){
+				if(state[i]==0)
+					pos0 = i+1;
+			}
+		}
+
+		int getPos0(){
+			if(pos0 == null)
+				calcPos0();
+			return pos0;
 		}
 	}
 }
