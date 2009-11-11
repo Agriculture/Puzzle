@@ -99,7 +99,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			visitedStates.put(root.getState().hashCode(), root.getCost());
 
 			while(!queue.isEmpty()){
-				//TODO entweder sortierte queue oder prüfen ob kleinstmögliches
+				//TODO entweder sortierte queue oder prï¿½fen ob kleinstmï¿½gliches
 				Node node = queue.remove(0);
 				if(node.isSolution()){
 					solution = node;
@@ -109,8 +109,9 @@ public class MyPuzzleSolver implements IPuzzleSolver
 				if(node.getCost() < currentCostLimit){
 					List<Move> moves = node.getMoves();
 					for(Move move : moves){
-						Node new = getNextNode(node, move)
-						queue.add(0, getNextNode(node, move));
+						Node newNode = getNextNode(node, move);
+//                                                if(!hash)
+						queue.add(0, newNode);
 					}
 				}
 
