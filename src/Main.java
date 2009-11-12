@@ -2,7 +2,7 @@ import puzzlelib.*;
 
 public class Main
 {
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         //1. Problem definieren, hier mal ein paar Beispiele
         //einfaches 8-Puzzle in 17 Zügen zu lösen
@@ -52,8 +52,8 @@ public class Main
         //dies gilt jedoch nicht für alle int-Arrays,
         //sowohl der Solver als auch manche der Hilfsmethoden bringen in diesem
         //Fall Fehler
-        try
-        {
+//        try
+//        {
             //4.1. welches Puzzle nehmen wir denn nun?
             int[] problem=simple8Puzzle;
             //4.2. Heuristik festlegen
@@ -78,15 +78,15 @@ public class Main
             if(!erg.isUnsolvable())
             {
                 if(Helper.isSolution(problem, erg.getSolution()))
-                    System.out.println("f�hrt wirklich zum Ziel");
+                    System.out.println("führt wirklich zum Ziel");
                 else
-                    System.out.println("Fehler: f�hrt nicht zum Ziel");
+                    System.out.println("Fehler: führt nicht zum Ziel");
             }
-        }
-        catch(Exception ex)
-        {
-            System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
-        }
+//        }
+//        catch(Exception ex)
+//        {
+//            System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
+//        }
 
     }
 }

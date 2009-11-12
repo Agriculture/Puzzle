@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,28 +22,29 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private int currentCostLimit;
 	//global input for solve(..)
 	private Heuristik heuristic;
-	private int[] problem;
+	private List<Integer> rootState;
+	int[] problem;
 	private Node solution;
+	private boolean foundSolution;
 
-	private enum Move{Up, Down, Left, Right};
      /**
-     * Löst ein Puzzle-Problem bzw. versucht dies.
+     * LÃ¶st ein Puzzle-Problem bzw. versucht dies.
      * @param heuristik Die hierbei zu verwendende Heuristik
-     * @param problem Das zu lösende Puzzle. Die Beschriftung der Steine wird in dem Array zeilenweise
-     * hintereinander angegeben. D.h. beim 8-Puzzle geben die ersten 3 Einträge die
-     * Positionen (x,y): (0,0), (1,0), (2,0) an. Die folgenden 3 Einträge
+     * @param problem Das zu lÃ¶sende Puzzle. Die Beschriftung der Steine wird in dem Array zeilenweise
+     * hintereinander angegeben. D.h. beim 8-Puzzle geben die ersten 3 EintrÃ€ge die
+     * Positionen (x,y): (0,0), (1,0), (2,0) an. Die folgenden 3 EintrÃ€ge
      * geben die Positionen (0,1), (1,1), (2,1) an usw.
-     * Für den Stein mit der Beschriftung 1 erscheint bspw. eine 1 im Array.
-     * Die leere Stelle wird durch eine 0 angegeben. Aus der Größe des Array kann man herausfinden,
-     * ob es sich um ein 8-, ein 15- oder ein 24-Puzzle handelt (jeweils 9, 16 bzw. 25 Einträge)
-     * Beispiel: das gelöste 8-Puzzle hat folgendes Array: 1,2,3,4,5,6,7,8,0
-     * @return Ergebnis des Lösungsversuchs. D.h. entweder "ist unlösbar" oder
-     * Lösungszugfolge mit einer kleinen Statistik (expandierte Knoten und effektiver
+     * FÃŒr den Stein mit der Beschriftung 1 erscheint bspw. eine 1 im Array.
+     * Die leere Stelle wird durch eine 0 angegeben. Aus der GrÃ¶Ãe des Array kann man herausfinden,
+     * ob es sich um ein 8-, ein 15- oder ein 24-Puzzle handelt (jeweils 9, 16 bzw. 25 EintrÃ€ge)
+     * Beispiel: das gelÃ¶ste 8-Puzzle hat folgendes Array: 1,2,3,4,5,6,7,8,0
+     * @return Ergebnis des LÃ¶sungsversuchs. D.h. entweder "ist unlÃ¶sbar" oder
+     * LÃ¶sungszugfolge mit einer kleinen Statistik (expandierte Knoten und effektiver
      * Branchingfaktor)
-     * @throws Exception Falls das übergebene Problem kein gültiger Puzzle-Zustand ist,
-     * weil bspw. eine andere Anzahl von Einträgen als 9, 16 oder 25 vorliegt oder
-     * weil Ziffern mehrfach oder gar nicht auftauchen oder falls nur ein Löser
-     * für das 8-Puzzle implementiert wurde, aber ein 15-Puzzle gelöst werden soll, kann hier eine
+     * @throws Exception Falls das ÃŒbergebene Problem kein gÃŒltiger Puzzle-Zustand ist,
+     * weil bspw. eine andere Anzahl von EintrÃ€gen als 9, 16 oder 25 vorliegt oder
+     * weil Ziffern mehrfach oder gar nicht auftauchen oder falls nur ein LÃ¶ser
+     * fÃŒr das 8-Puzzle implementiert wurde, aber ein 15-Puzzle gelÃ¶st werden soll, kann hier eine
      * Exception geworfen werden.
      */
     public SolveErg solve(Heuristik heuristik, int[] problem) throws Exception
@@ -48,18 +52,21 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		//make it global cause im lazy
 		this.heuristic = heuristik;
 		this.problem = problem;
+		rootState = new LinkedList<Integer>();
+		for(int i=0; i<problem.length; i++)
+			rootState.add(problem[i]);
 
-        //1. zuerst testen, ob es sich um ein vernünftiges Puzzle-Problem handelt
+        //1. zuerst testen, ob es sich um ein vernÃŒnftiges Puzzle-Problem handelt
         if(!checkPuzzle())
             throw new Exception("not a valid puzzle");
 
-        //2. Größe des Puzzles herausfinden (9->3x3, 16->4x4, 25->5x5)
+        //2. GrÃ¶Ãe des Puzzles herausfinden (9->3x3, 16->4x4, 25->5x5)
         //if(problem.length==9) make8Puzzle(...)
         //else if(problem.length==16) make15Puzzle(...)
-        //else throw new Exception("so große Puzzle habe ich nicht implementiert");
+        //else throw new Exception("so groÃe Puzzle habe ich nicht implementiert");
 		System.err.println("Puzzle has size: "+size);
 
-        //3. je nach Heuristik anders lösen
+        //3. je nach Heuristik anders lÃ¶sen
         //if(heuristik==Heuristik.MissplacedTiles) solveMissplacedTiles(...)
         //else if(heuristik==Heuristik.Gaschnig) solveGaschnig(...)
         //else solveBlockDistance(...)
@@ -70,12 +77,19 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //   return SolveErg.makeErgForUnsolvable();
         //else
         //{
-        //     ArrayList<Direction> zugfolge=getLösungszugfolge();
+        //     ArrayList<Direction> zugfolge=getLÃ¶sungszugfolge();
         //     int expandedNodes=getExpandedNodes();
         //     double effectiveBranchingFactor=getEffectiveBranchingfactor(...);
         //     return SolveErg.makeErgForSolvable(ArrayList<Direction> loesungsZuege, int expandedNodesCount, double effectiveBranchingFactor)
         //}
-        return SolveErg.makeErgForUnsolvable();
+		if(foundSolution){
+			ArrayList<Direction> way = calcWay();
+			double effectiveBranchingFactor = 0;
+			int expandedNodesCount = 0;
+			return SolveErg.makeErgForSolvable(way, expandedNodesCount, effectiveBranchingFactor);
+		} else {
+			return SolveErg.makeErgForUnsolvable();
+		}
     }
 
 	/**
@@ -83,43 +97,83 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	 */
 	private void IDA(){
 		//init
-		currentCostLimit = 1;
 		List<Node> queue = new LinkedList<Node>();
-		Map<Integer, Integer> visitedStates = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> hash = new HashMap<Integer, Integer>();
+		hash.put(rootState.hashCode(), 0);
 
 		//to be sure that we found something in the last iteration
-		Boolean newWays = true;
+		Boolean foundNewNode = true;
 		//break if we find something
-		Boolean foundSolution = true;
+		foundSolution = false;
+		Node root = new Node(null, rootState, null);
+		//set the minimum, if heuristic always return 0 then the limit is 1
+		currentCostLimit = root.getCost()+1;
 
-		while(!foundSolution && newWays){
-			newWays = false;
-			Node root = new Node(null, problem);
+		while(!foundSolution && foundNewNode){
+			System.err.println("currentCostLimit: "+currentCostLimit);
+			System.err.println("current size of hash: "+hash.size());
+			System.err.println(hash.keySet());
+
+			foundNewNode = false;
 			queue.add(root);
-			visitedStates.put(root.getState().hashCode(), root.getCost());
 
 			while(!queue.isEmpty()){
-				//TODO entweder sortierte queue oder pr�fen ob kleinstm�gliches
+				//TODO entweder sortierte queue oder prï¿œfen ob kleinstmï¿œgliches
 				Node node = queue.remove(0);
+				System.err.println("look at "+node+" in hash: "+hash.containsKey(node.hashCode()));
 				if(node.isSolution()){
 					solution = node;
 					foundSolution = true;
 				}
 
 				if(node.getCost() < currentCostLimit){
-					List<Move> moves = node.getMoves();
-					for(Move move : moves){
+
+					List<Direction> moves = node.getMoves();
+
+					for(Direction move : moves){
 						Node newNode = getNextNode(node, move);
-//                                                if(!hash)
-						queue.add(0, newNode);
+						//add only if not seen
+						if(!hash.containsKey(newNode.hashCode())){
+							foundNewNode = true;
+							hash.put(newNode.hashCode(), currentCostLimit-newNode.getCost());
+							queue.add(0, newNode);
+						} else {
+							Integer hashValue = hash.get(newNode.hashCode());
+							//or if we can now go beyond the last limit
+							System.err.println((currentCostLimit-newNode.getCost())+" > "+hashValue);
+							if( (currentCostLimit-newNode.getCost()) > hashValue){
+								queue.add(0, newNode);
+								hash.put(newNode.hashCode(), currentCostLimit-newNode.getCost());
+							}
+						}
 					}
 				}
-
 			}
 			currentCostLimit++;
-			System.err.println("currentCostLimit: "+currentCostLimit);
 		}
 	}
+
+	private ArrayList<Direction> calcWay() {
+		Node node = solution;
+		//calc the way of the nodes
+		List<Node> way = new LinkedList<Node>();
+		while(node != null){
+			way.add(0, node);
+			node = node.getParent();
+		}
+		//find out the way we took
+		ArrayList<Direction> result = new ArrayList<Direction>();
+		while(way.size() > 1){
+			node = way.remove(0);
+			List<Direction> moves = node.getMoves();
+			for(Direction move : moves){
+				if(getNextNode(node, move).equals(way.get(0)))
+					result.add(move);
+			}
+		}
+		return result;
+	}
+
 
 	/**
 	 * check puzzle before doing anything and determin the size
@@ -129,21 +183,21 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private boolean checkPuzzle() {
 		if(problem == null)
 			return false;
-
 		Double sizeDouble = java.lang.Math.sqrt(problem.length);
 
-		if( sizeDouble == 0)
+		if( sizeDouble == 0f)
 			return false;
 
-		if( sizeDouble.floatValue() != 0)
+		if( (sizeDouble-sizeDouble.intValue()) != 0)
 			return false;
 
 		size = sizeDouble.intValue();
 		return true;
 	}
 
-	private Node getNextNode(Node parent, Move move){
-		int[] state = parent.getState();
+	private Node getNextNode(Node parent, Direction move){
+		List<Integer> parentState = parent.getState();
+		List<Integer> state = new LinkedList<Integer>();
 		int pos0 = parent.getPos0();
 		int posOld = 0;
 		switch(move){
@@ -152,10 +206,21 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			case Right:	posOld = pos0 - 1;		break;
 			case Left:	posOld = pos0 + 1;		break;
 		}
-		int old = state[posOld-1];
-		state[posOld-1] = 0;
-		state[pos0-1]	= old;
-		return new Node(parent, state);
+		//switch
+		pos0--;
+		posOld--;
+		int old = parentState.get(posOld);
+
+		for(int i=0; i<parentState.size(); i++){
+			if(i == pos0)
+				state.add(old);
+			else if (i == posOld)
+				state.add(0);
+			else
+				state.add(parentState.get(i));
+		}
+//		System.err.println(move+" "+pos0+" "+posOld+" "+state);
+		return new Node(parent, state, posOld);
 	}
 
 	/**
@@ -165,10 +230,16 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		private Node parent;
 		private int wayCost;
 		private int heuristicCost;
-		private int[] state;
+		private List<Integer> state;
 		private Integer pos0;
 
-		Node(Node parent, int[] state){
+		Node(Node parent, List<Integer> state, Integer pos0){
+			this.state = state;
+	//		System.err.println(state);
+			if (pos0 == null)
+				calcPos0();
+			else
+				this.pos0 = pos0;
 			this.parent = parent;
 			if(parent == null)
 				this.wayCost = 0;
@@ -176,8 +247,6 @@ public class MyPuzzleSolver implements IPuzzleSolver
 				this.wayCost = parent.getWayCost() +1;
 			//TODO
 			this.heuristicCost = 0;
-			this.state = state;
-			this.pos0 = null;
 		}
 
 		void setParent(Node parent){
@@ -192,7 +261,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			return parent;
 		}
 
-		int[] getState(){
+		List<Integer> getState(){
 			return state;
 		}
 
@@ -201,8 +270,8 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		}
 
 		Boolean isSolution(){
-			for(int i=1; i<size; i++){
-				if(i != state[i-1])
+			for(int i=1; i<size*size; i++){
+				if(i != state.get(i-1))
 					return false;
 			}
 			return true;
@@ -218,26 +287,31 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					return 1;
 		}
 
-		private List<Move> getMoves() {
-			List<Move> moves = new LinkedList<Move>();
-			if(pos0 == null)
-				calcPos0();
+		private List<Direction> getMoves() {
+			List<Direction> moves = new LinkedList<Direction>();
+			//if not at the bottom i can move up
 			if(!(pos0 >= size*(size-1)))
-				moves.add(Move.Up);
+				moves.add(Direction.Up);
+			//if not at the top i can move down
 			if(!(pos0 <= size))
-				moves.add(Move.Down);
+				moves.add(Direction.Down);
+			//if not on the left border i can move right
 			if(!((pos0 % size) == 1))
-				moves.add(Move.Left);
+				moves.add(Direction.Right);
+			//of not on the right border i can move left
 			if(!((pos0 % size) == (size-1) ))
-				moves.add(Move.Right);
+				moves.add(Direction.Left);
+			System.err.println("calculated moves: "+moves);
 			return moves;
 		}
 
 		private void calcPos0(){
 			int i = 0;
 			while(pos0 == null){
-				if(state[i]==0)
+				System.err.println(state);
+				if(state.get(i)==0)
 					pos0 = i+1;
+				i++;
 			}
 		}
 
@@ -245,6 +319,22 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			if(pos0 == null)
 				calcPos0();
 			return pos0;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return (obj instanceof Node)
+				&&	state.equals(((Node) obj).getState());
+		}
+
+		@Override
+		public int hashCode() {
+			return state.hashCode();
+		}
+
+		@Override
+		public String toString() {
+			return "node "+state+" pos0: "+pos0;
 		}
 	}
 }
