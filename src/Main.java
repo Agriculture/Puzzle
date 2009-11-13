@@ -55,7 +55,7 @@ public class Main
 //        try
 //        {
             //4.1. welches Puzzle nehmen wir denn nun?
-            int[] problem=simple8Puzzle;
+            int[] problem=simple15Puzzle;
             //4.2. Heuristik festlegen
             Heuristik h=h1;
 
