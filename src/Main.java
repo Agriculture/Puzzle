@@ -9,6 +9,10 @@ public class Main
         int[] simple8Puzzle=new int[]{5,6,7,
                            0,2,3,
                            1,4,8};
+		int[] simple8Puzzle2=new int[]{8, 7, 6,
+							5, 4, 3,
+							2, 1, 0};
+
         //komplizierteres 8-Puzzle, in 31 Zügen zu lösen
         int[] complex8Puzzle=new int[]{6,4,7,
                                        8,5,0,
@@ -55,7 +59,7 @@ public class Main
         try
         {
             //4.1. welches Puzzle nehmen wir denn nun?
-            int[] problem=simple15Puzzle;
+            int[] problem=complex15Puzzle;
             //4.2. Heuristik festlegen
             Heuristik h=h3;
 

@@ -27,6 +27,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private Node solution;
 	private boolean foundSolution;
 	private int expandedNodes = 0;
+	private long start;
 
      /**
      * LÃ¶st ein Puzzle-Problem bzw. versucht dies.
@@ -72,7 +73,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //if(heuristik==Heuristik.MissplacedTiles) solveMissplacedTiles(...)
         //else if(heuristik==Heuristik.Gaschnig) solveGaschnig(...)
         //else solveBlockDistance(...)
-		long start = System.currentTimeMillis();
+		start = System.currentTimeMillis();
 		IDA();
 		System.err.println("solved in (ms): "+(System.currentTimeMillis()-start));
 
@@ -88,10 +89,17 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //}
 		if(foundSolution){
 			ArrayList<Direction> way = calcWay();
-			double effectiveBranchingFactor = 0;
+			float branch = 1;
+			float sum = 0;
+			while(sum < expandedNodes){
+				branch+=0.001;
+				sum = 0;
+				for(int i=0; i<=solution.getWayCost(); i++)
+					sum+= Math.pow(branch, i);
+			}
 //			System.err.println("solution "+solution);
 //			System.err.println("way "+way);
-			return SolveErg.makeErgForSolvable(way, expandedNodes, effectiveBranchingFactor);
+			return SolveErg.makeErgForSolvable(way, expandedNodes, branch);
 		} else {
 			return SolveErg.makeErgForUnsolvable();
 		}
@@ -118,7 +126,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		while(!foundSolution && foundSomethingNew){
 			System.err.println("currentCostLimit: "+currentCostLimit);
 			System.err.println("current size of hash: "+hash.size());
-			//System.err.println(hash.keySet));
+			System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
 
 			foundSomethingNew = false;
 			queue.add(root);
@@ -147,9 +155,13 @@ public class MyPuzzleSolver implements IPuzzleSolver
 						expand = false;
 					}
 				} else {
+						//found new node
 					foundSomethingNew = true;
-					//found new node
-					hash.put(node.hashCode(), currentCostLimit-node.getCost());
+					if((currentCostLimit-node.getCost()) < 1){
+						expand = false;
+					} else {
+						hash.put(node.hashCode(), currentCostLimit-node.getCost());
+					}
 				}
 				
 				//look at this in the next round
@@ -162,13 +174,14 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					List<Direction> moves = node.getMoves();
 					for(Direction move : moves){
 						Node newNode = getNextNode(node, move);
-						queue.add(0, newNode);
+						queue.add(0,newNode);
 					}
 				}
 			}
 			currentCostLimit++;
 		}
 		System.err.println("\nlast size of hash: "+hash.size());
+		System.err.println("used memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
 	}
 
 	private ArrayList<Direction> calcWay() {
