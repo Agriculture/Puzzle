@@ -26,6 +26,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private Integer[] rootState;
 	private Node solution;
 	private boolean foundSolution;
+	private int expandedNodes = 0;
 
      /**
      * LÃ¶st ein Puzzle-Problem bzw. versucht dies.
@@ -86,10 +87,9 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		if(foundSolution){
 			ArrayList<Direction> way = calcWay();
 			double effectiveBranchingFactor = 0;
-			int expandedNodesCount = 0;
 			System.err.println("solution "+solution);
 			System.err.println("way "+way);
-			return SolveErg.makeErgForSolvable(way, expandedNodesCount, effectiveBranchingFactor);
+			return SolveErg.makeErgForSolvable(way, expandedNodes, effectiveBranchingFactor);
 		} else {
 			return SolveErg.makeErgForUnsolvable();
 		}
@@ -105,7 +105,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		hash.put(Arrays.deepHashCode(rootState), 0);
 
 		//to be sure that we found something in the last iteration
-		Boolean foundNewNode = true;
+		Boolean foundSomethingNew = true;
 		//break if we find something
 		foundSolution = false;
 		Node root = new Node(null, rootState, null);
@@ -113,19 +113,20 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		currentCostLimit = root.getCost()+1;
 		Boolean expand;
 
-		while(!foundSolution && foundNewNode){
+		while(!foundSolution && foundSomethingNew){
 			System.err.println("currentCostLimit: "+currentCostLimit);
 			System.err.println("current size of hash: "+hash.size());
 			//System.err.println(hash.keySet());
 
-			foundNewNode = false;
+			foundSomethingNew = false;
 			queue.add(root);
 
 			while(!queue.isEmpty()){
+				//System.err.println(queue);
 				expand = true;
 				Node node = queue.remove(0);
 
-				if(node.isSolution()){
+				if(node.isSolution(node.getState())){
 					solution = node;
 					foundSolution = true;
 				}
@@ -134,18 +135,24 @@ public class MyPuzzleSolver implements IPuzzleSolver
 				if(hash.containsKey(node.hashCode())){
 					Integer hashValue = hash.get(node.hashCode());
 					//System.err.println((currentCostLimit-node.getCost())+" > "+hashValue);
+					//test whether we found a shorter way
 					if( (currentCostLimit-node.getCost()) > hashValue){
+						//found shorter way
+						foundSomethingNew = true;
 						hash.put(node.hashCode(), currentCostLimit-node.getCost());
 						//search
 					} else {
 						expand = false;
 					}
 				} else {
-					foundNewNode = true;
+					foundSomethingNew = true;
+					//found new node
 					hash.put(node.hashCode(), currentCostLimit-node.getCost());
 				}
-
+//				System.err.println(node);
 				if(expand && (node.getCost() < currentCostLimit)){
+//					System.err.println(node);
+					expandedNodes++;
 					List<Direction> moves = node.getMoves();
 					for(Direction move : moves){
 						Node newNode = getNextNode(node, move);
@@ -241,7 +248,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			else
 				this.wayCost = parent.getWayCost() +1;
 			//TODO
-			this.heuristicCost = 0;
+			this.heuristicCost = calcHeuristic();
 		}
 
 		void setParent(Node parent){
@@ -264,9 +271,9 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			return wayCost;
 		}
 
-		Boolean isSolution(){
+		Boolean isSolution(Integer[] thing){
 			for(int i=1; i<size*size; i++){
-				if(i != state[i-1])
+				if(i != thing[i-1])
 					return false;
 			}
 			return true;
@@ -309,6 +316,67 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			}
 		}
 
+		private int calcHeuristic(){
+			int heuristicValue = 0;
+			switch(heuristic){
+				case MissplacedTiles:
+					int a;
+					for(a=1; a < size*size; a++){
+						//add if this is not the empty field and there is the wrong number
+						if((state[a-1] != 0)&&(a != state[a-1])){
+							heuristicValue++;
+						}
+					}
+					break;
+				case Gaschnig:
+					Integer[] tmpState = new Integer[size*size];
+					Integer tmpPos0 = this.pos0;
+					System.arraycopy(state, 0, tmpState, 0, size*size);
+					//calc how long until right
+					while(!isSolution(tmpState)){
+						heuristicValue++;
+						//there is seomthing wrong, find the piece that can go to 0
+						int wrongPiece = 0;
+						while((wrongPiece <= (size*size-1))&& (tmpState[wrongPiece] != (tmpPos0+1))){
+							wrongPiece++;
+						}
+						//System.err.println(Arrays.asList(tmpState)+" "+wrongPiece+" "+tmpPos0);
+						//if the 0 is at the last place
+						//System.err.println(wrongPiece+" == "+(size*size-1));
+						if(wrongPiece == (size*size)){
+							//must place the first not right piece on 8
+							int i=0;
+							while(tmpState[i] == (i+1))
+								i++;
+							tmpState[size*size-1] = tmpState[i];
+							tmpState[i] = 0;
+							tmpPos0 = i;
+						} else {
+							//switch the wrong piece with the 0
+							tmpState[tmpPos0] = tmpState[wrongPiece];
+							//System.err.println("swapped "+tmpState[wrongPiece]);
+							tmpState[wrongPiece] = 0;
+							tmpPos0 = wrongPiece;
+						}
+					}
+					//System.err.println("-");
+					break;
+				case BlockDistance:
+						for(int src=0; src<(size*size); src++){
+							int dst = state[src]-1;
+							//if state[src]==0 then do nothing
+							// -> the 0  is not a movable piece !
+							if(dst != -1){
+								heuristicValue+=Math.abs((dst % size)-(src % size));
+								heuristicValue+=Math.abs(Math.floor(dst / size)-Math.floor(src / size));
+							}
+						}
+					break;
+
+			}
+			return heuristicValue;
+		}
+
 		int getPos0(){
 			if(pos0 == null)
 				calcPos0();
@@ -328,7 +396,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 
 		@Override
 		public String toString() {
-			return "node "+Arrays.asList(state)+" pos0: "+pos0;
+			return "node "+Arrays.asList(state)+" cost: "+getCost();
 		}
 	}
 }

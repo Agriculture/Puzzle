@@ -52,12 +52,12 @@ public class Main
         //dies gilt jedoch nicht für alle int-Arrays,
         //sowohl der Solver als auch manche der Hilfsmethoden bringen in diesem
         //Fall Fehler
-//        try
-//        {
+        try
+        {
             //4.1. welches Puzzle nehmen wir denn nun?
-            int[] problem=simple15Puzzle;
+            int[] problem=complex15Puzzle;
             //4.2. Heuristik festlegen
-            Heuristik h=h1;
+            Heuristik h=h3;
 
             //4.3. Das Puzzle anzeigen (Console)
             System.out.println(Helper.puzzleToString(problem));
@@ -82,11 +82,11 @@ public class Main
                 else
                     System.out.println("Fehler: führt nicht zum Ziel");
             }
-//        }
-//        catch(Exception ex)
-//        {
-//            System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
-//        }
+        }
+        catch(Exception ex)
+        {
+            System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
+        }
 
     }
 }
