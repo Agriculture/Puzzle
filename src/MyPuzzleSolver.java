@@ -72,7 +72,9 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //if(heuristik==Heuristik.MissplacedTiles) solveMissplacedTiles(...)
         //else if(heuristik==Heuristik.Gaschnig) solveGaschnig(...)
         //else solveBlockDistance(...)
+		long start = System.currentTimeMillis();
 		IDA();
+		System.err.println("solved in (ms): "+(System.currentTimeMillis()-start));
 
         //4. je nach Ausgang ein Ergebnis zusammenstellen:
         //if(!isSolveable)
@@ -87,8 +89,8 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		if(foundSolution){
 			ArrayList<Direction> way = calcWay();
 			double effectiveBranchingFactor = 0;
-			System.err.println("solution "+solution);
-			System.err.println("way "+way);
+//			System.err.println("solution "+solution);
+//			System.err.println("way "+way);
 			return SolveErg.makeErgForSolvable(way, expandedNodes, effectiveBranchingFactor);
 		} else {
 			return SolveErg.makeErgForUnsolvable();
@@ -116,13 +118,14 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		while(!foundSolution && foundSomethingNew){
 			System.err.println("currentCostLimit: "+currentCostLimit);
 			System.err.println("current size of hash: "+hash.size());
-			//System.err.println(hash.keySet());
+			//System.err.println(hash.keySet));
 
 			foundSomethingNew = false;
 			queue.add(root);
 
 			while(!queue.isEmpty()){
-				//System.err.println(queue);
+//				System.err.println(queue);
+//				System.err.println(hash);
 				expand = true;
 				Node node = queue.remove(0);
 
@@ -131,17 +134,16 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					foundSolution = true;
 				}
 
-				//System.err.println("look at "+node+" in hash: "+hash.containsKey(node.hashCode())+" "+node.hashCode());
+//				System.err.println("look at "+node+" in hash: "+hash.containsKey(node.hashCode())+" "+node.hashCode());
 				if(hash.containsKey(node.hashCode())){
 					Integer hashValue = hash.get(node.hashCode());
-					//System.err.println((currentCostLimit-node.getCost())+" > "+hashValue);
+					//found shorter way
 					//test whether we found a shorter way
 					if( (currentCostLimit-node.getCost()) > hashValue){
-						//found shorter way
-						foundSomethingNew = true;
 						hash.put(node.hashCode(), currentCostLimit-node.getCost());
 						//search
 					} else {
+						//we have already seen this from a shorter or equal way
 						expand = false;
 					}
 				} else {
@@ -149,7 +151,11 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					//found new node
 					hash.put(node.hashCode(), currentCostLimit-node.getCost());
 				}
-//				System.err.println(node);
+				
+				//look at this in the next round
+				if(expand && (node.getCost() >= currentCostLimit))
+					foundSomethingNew = true;
+
 				if(expand && (node.getCost() < currentCostLimit)){
 //					System.err.println(node);
 					expandedNodes++;
@@ -162,6 +168,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			}
 			currentCostLimit++;
 		}
+		System.err.println("\nlast size of hash: "+hash.size());
 	}
 
 	private ArrayList<Direction> calcWay() {
