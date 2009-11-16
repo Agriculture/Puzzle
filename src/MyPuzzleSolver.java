@@ -1,9 +1,14 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import puzzlelib.*;
 
 /**
@@ -107,8 +112,8 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private void IDA(){
 		//init
 		PriorityQueue<Node> queue = new PriorityQueue<Node>();
-		HashMap<Integer, Boolean> hash = new HashMap<Integer, Boolean>();
-		hash.put(Arrays.deepHashCode(rootState), null);
+		Map<Integer, Integer> hash = new HashMap<Integer, Integer>();
+		hash.put(Arrays.deepHashCode(rootState), 0);
 
 		//to be sure that we found something in the last iteration
 		Boolean foundSomethingNew = true;
@@ -117,9 +122,12 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		Node root = new Node(null, rootState, null);
 		//set the minimum, if heuristic always return 0 then the limit is 1
 		currentCostLimit = root.getCost()+1;
+		Boolean expand;
 
 		while(!foundSolution && foundSomethingNew){
 			System.err.println("currentCostLimit: "+currentCostLimit);
+			System.err.println("current size of hash: "+hash.size());
+			System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
 
 			foundSomethingNew = false;
 			queue.add(root);
@@ -127,6 +135,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 			while(!queue.isEmpty()){
 //				System.err.println(queue);
 //				System.err.println(hash);
+				expand = true;
 				Node node = queue.poll();
 
 				if(node.isSolution(node.getState())){
@@ -134,24 +143,42 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					foundSolution = true;
 				}
 
-				if(node.getCost() < currentCostLimit){
+//				System.err.println("look at "+node+" in hash: "+hash.containsKey(node.hashCode())+" "+node.hashCode());
+				if(hash.containsKey(node.hashCode())){
+					Integer hashValue = hash.get(node.hashCode());
+					//found shorter way
+					//test whether we found a shorter way
+					if( (currentCostLimit-node.getCost()) > hashValue){
+						hash.put(node.hashCode(), currentCostLimit-node.getCost());
+						//search
+					} else {
+						//we have already seen this from a shorter or equal way
+						expand = false;
+					}
+				} else {
+						//found new node
+					foundSomethingNew = true;
+					if((currentCostLimit-node.getCost()) < 1){
+						expand = false;
+					} else {
+						hash.put(node.hashCode(), currentCostLimit-node.getCost());
+					}
+				}
+				
+				//look at this in the next round
+				if(expand && (node.getCost() >= currentCostLimit))
+					foundSomethingNew = true;
+
+				if(expand && (node.getCost() < currentCostLimit)){
 //					System.err.println(node);
 					expandedNodes++;
-					hash.put(node.hashCode(), null);
 					List<Direction> moves = node.getMoves();
 					for(Direction move : moves){
 						Node newNode = getNextNode(node, move);
-						if(!hash.containsKey(newNode.hashCode())){
-							queue.add(newNode);
-						}
+						queue.add(newNode);
 					}
-				} else {
-					foundSomethingNew = true;
 				}
 			}
-			System.err.println("current size of hash: "+hash.size());
-			System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
-			hash.clear();
 			currentCostLimit++;
 		}
 		System.err.println("\nlast size of hash: "+hash.size());
@@ -383,21 +410,12 @@ public class MyPuzzleSolver implements IPuzzleSolver
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj instanceof Node){
-				Node o = (Node) obj;
-				for(int i=0; i<size*size; i++)
-					if(state[i] != o.getState()[i])
-						return false;
-				return true;
-			}else{
-				return false;
-			}
-				
+			return (obj instanceof Node)
+				&&	Arrays.equals(state,((Node) obj).getState());
 		}
 
 		@Override
 		public int hashCode() {
-			//nicht gut...
 			return Arrays.deepHashCode(state);
 		}
 
