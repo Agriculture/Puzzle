@@ -111,14 +111,14 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private void IDA(){
 		//init
 		List<Node> queue = new LinkedList<Node>();
-		Map<Integer, Integer> hash = new HashMap<Integer, Integer>();
-		hash.put(Arrays.deepHashCode(rootState), 0);
+		Map<Long, Integer> hash = new HashMap<Long, Integer>();
 
 		//to be sure that we found something in the last iteration
 		Boolean foundSomethingNew = true;
 		//break if we find something
 		foundSolution = false;
 		Node root = new Node(null, rootState, null);
+		hash.put(root.goodHash(), 0);
 		//set the minimum, if heuristic always return 0 then the limit is 1
 		currentCostLimit = root.getCost()+1;
 		Boolean expand;
@@ -142,13 +142,13 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					foundSolution = true;
 				}
 
-//				System.err.println("look at "+node+" in hash: "+hash.containsKey(node.hashCode())+" "+node.hashCode());
-				if(hash.containsKey(node.hashCode())){
-					Integer hashValue = hash.get(node.hashCode());
+//				System.err.println("look at "+node+" in hash: "+hash.containsKey(node.goodHash())+" "+node.goodHash());
+				if(hash.containsKey(node.goodHash())){
+					Integer hashValue = hash.get(node.goodHash());
 					//found shorter way
 					//test whether we found a shorter way
 					if( (currentCostLimit-node.getCost()) > hashValue){
-						hash.put(node.hashCode(), currentCostLimit-node.getCost());
+						hash.put(node.goodHash(), currentCostLimit-node.getCost());
 						//search
 					} else {
 						//we have already seen this from a shorter or equal way
@@ -160,7 +160,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 					if((currentCostLimit-node.getCost()) < 1){
 						expand = false;
 					} else {
-						hash.put(node.hashCode(), currentCostLimit-node.getCost());
+						hash.put(node.goodHash(), currentCostLimit-node.getCost());
 					}
 				}
 				
@@ -409,9 +409,12 @@ public class MyPuzzleSolver implements IPuzzleSolver
 				&&	Arrays.equals(state,((Node) obj).getState());
 		}
 
-		@Override
-		public int hashCode() {
-			return Arrays.deepHashCode(state);
+		public Long goodHash() {
+			Long value = 0L;
+			for(int i=0; i<size*size; i++){
+				value+=Math.round(state[i]*Math.pow(16, i));
+			}
+			return value;
 		}
 
 		@Override
