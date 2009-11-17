@@ -24,6 +24,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 	private boolean foundSolution;
 	private int expandedNodes = 0;
 	private long start;
+    private int maxCost;
 
      /**
      * LÃ¶st ein Puzzle-Problem bzw. versucht dies.
@@ -108,52 +109,52 @@ public class MyPuzzleSolver implements IPuzzleSolver
 		//init
 		PriorityQueue<Node> queue = new PriorityQueue<Node>();
 		HashMap<Integer, Boolean> hash = new HashMap<Integer, Boolean>();
+		HashMap<Integer, Boolean> queueHash = new HashMap<Integer, Boolean>();
 		hash.put(Arrays.deepHashCode(rootState), null);
 
-		//to be sure that we found something in the last iteration
-		Boolean foundSomethingNew = true;
 		//break if we find something
 		foundSolution = false;
 		Node root = new Node(null, rootState, null);
 		//set the minimum, if heuristic always return 0 then the limit is 1
-		currentCostLimit = root.getCost()+1;
 
-		while(!foundSolution && foundSomethingNew){
-			System.err.println("currentCostLimit: "+currentCostLimit);
+//			System.err.println("currentCostLimit: "+currentCostLimit);
+                queue.add(root);
 
-			foundSomethingNew = false;
-			queue.add(root);
+                maxCost = root.getWayCost();
 
-			while(!queue.isEmpty()){
+                while(!queue.isEmpty() && !foundSolution){
 //				System.err.println(queue);
 //				System.err.println(hash);
-				Node node = queue.poll();
+                        Node node = queue.poll();
 
-				if(node.isSolution(node.getState())){
-					solution = node;
-					foundSolution = true;
-				}
+                        if(node.isSolution(node.getState())){
+                                solution = node;
+                                foundSolution = true;
+                        }
 
-				if(node.getCost() < currentCostLimit){
-//					System.err.println(node);
-					expandedNodes++;
-					hash.put(node.hashCode(), null);
-					List<Direction> moves = node.getMoves();
-					for(Direction move : moves){
-						Node newNode = getNextNode(node, move);
-						if(!hash.containsKey(newNode.hashCode())){
-							queue.add(newNode);
-						}
-					}
-				} else {
-					foundSomethingNew = true;
-				}
-			}
-			System.err.println("current size of hash: "+hash.size());
-			System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
-			hash.clear();
-			currentCostLimit+=2;
-		}
+                        if(node.getCost() > maxCost){
+                            maxCost = node.getCost();
+                            System.err.println("currentMaxCost: "+maxCost);
+                            System.err.println("current size of hash: "+hash.size());
+                            System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
+                            System.err.println("nodes in queue: "+queue.size());
+                            System.err.println("using memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
+                        }
+
+                        expandedNodes++;
+                        hash.put(node.hashCode(), null);
+                        List<Direction> moves = node.getMoves();
+                        for(Direction move : moves){
+                                Node newNode = getNextNode(node, move);
+                                if(!hash.containsKey(newNode.hashCode())
+                                        && !queueHash.containsKey(newNode.hashCode())){
+                                        queue.add(newNode);
+                                        queueHash.put(newNode.hashCode(), null);
+                                }
+                        }
+                }
+//                System.err.println("current size of hash: "+hash.size());
+//                System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
 		System.err.println("used memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
 	}
 
@@ -278,12 +279,19 @@ public class MyPuzzleSolver implements IPuzzleSolver
 
 		public int compareTo(Object arg0) {
 			Node o = (Node) arg0;
-			if(heuristicCost < o.getHeuristicCost())
+			if((wayCost+heuristicCost) < o.getCost())
 				return -1;
-			else if(heuristicCost == o.getHeuristicCost())
+			else 
+                            if((wayCost+heuristicCost) == o.getCost())
+                                if(heuristicCost < o.getHeuristicCost())
+                                        return -1;
+                                else
+                                    if(heuristicCost == o.getHeuristicCost())
+                                        return 0;
+                                    else
 					return 0;
-				else
-					return 1;
+                            else
+                                return 1;
 		}
 
 		private List<Direction> getMoves() {
@@ -382,16 +390,9 @@ public class MyPuzzleSolver implements IPuzzleSolver
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj instanceof Node){
-				Node o = (Node) obj;
-				for(int i=0; i<size*size; i++)
-					if(state[i] != o.getState()[i])
-						return false;
-				return true;
-			}else{
-				return false;
-			}
-				
+                    //is used in calcWay()
+			return Arrays.deepEquals(state, ((Node)obj).getState());
+			
 		}
 
 		@Override
