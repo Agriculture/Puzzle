@@ -64,7 +64,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //if(problem.length==9) make8Puzzle(...)
         //else if(problem.length==16) make15Puzzle(...)
         //else throw new Exception("so groÃe Puzzle habe ich nicht implementiert");
-		System.err.println("Puzzle has size: "+size);
+		//System.err.println("Puzzle has size: "+size);
 
         //3. je nach Heuristik anders lÃ¶sen
         //if(heuristik==Heuristik.MissplacedTiles) solveMissplacedTiles(...)
@@ -72,7 +72,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
         //else solveBlockDistance(...)
 		start = System.currentTimeMillis();
 		IDA();
-		System.err.println("solved in (ms): "+(System.currentTimeMillis()-start));
+		//System.err.println("solved in (ms): "+(System.currentTimeMillis()-start));
 
         //4. je nach Ausgang ein Ergebnis zusammenstellen:
         //if(!isSolveable)
@@ -120,7 +120,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
 //			System.err.println("currentCostLimit: "+currentCostLimit);
                 queue.add(root);
 
-                maxCost = root.getWayCost();
+     //           maxCost = root.getWayCost();
 
                 while(!queue.isEmpty() && !foundSolution){
 //				System.err.println(queue);
@@ -132,7 +132,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
                                 foundSolution = true;
                         }
 
-                        if(node.getCost() > maxCost){
+        /*                if(node.getCost() > maxCost){
                             maxCost = node.getCost();
                             System.err.println("currentMaxCost: "+maxCost);
                             System.err.println("current size of hash: "+hash.size());
@@ -140,7 +140,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
                             System.err.println("nodes in queue: "+queue.size());
                             System.err.println("using memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
                         }
-
+*/
                         expandedNodes++;
                         hash.put(node.hashCode(), null);
                         List<Direction> moves = node.getMoves();
@@ -155,7 +155,7 @@ public class MyPuzzleSolver implements IPuzzleSolver
                 }
 //                System.err.println("current size of hash: "+hash.size());
 //                System.err.println("expanded Nodes: "+expandedNodes+" in (ms) "+(System.currentTimeMillis()-start));
-		System.err.println("used memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
+	//	System.err.println("used memory: (KiB) "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024);
 	}
 
 	private ArrayList<Direction> calcWay() {

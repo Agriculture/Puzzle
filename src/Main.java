@@ -43,7 +43,6 @@ public class Main
         //ein zufällig generiertes 15-Puzzle, wobei einfach die Steine permutiert wurden, nicht unbedingt lösbar
         int[] zufalls15Puzzle=Helper.generateRandom15Puzzle(false);
         //2. Unseren Solver erstellen
-        MyPuzzleSolver solver=new MyPuzzleSolver();
 
         //3. Heuristik festlegen
         Heuristik h1=Heuristik.MissplacedTiles;
@@ -56,41 +55,60 @@ public class Main
         //dies gilt jedoch nicht für alle int-Arrays,
         //sowohl der Solver als auch manche der Hilfsmethoden bringen in diesem
         //Fall Fehler
-        try
-        {
-            //4.1. welches Puzzle nehmen wir denn nun?
-            int[] problem=complex15Puzzle;
-            //4.2. Heuristik festlegen
-            Heuristik h=h3;
 
-            //4.3. Das Puzzle anzeigen (Console)
-            System.out.println(Helper.puzzleToString(problem));
+		int[][] problems = new int[][]{simple8Puzzle, simple8Puzzle, simple8Puzzle,
+										complex8Puzzle, complex8Puzzle, complex8Puzzle,
+										simple15Puzzle, simple15Puzzle, simple15Puzzle,
+										complex15Puzzle};
+		String[] names = new String[]{"simple8Puzzle", "simple8Puzzle", "simple8Puzzle",
+										"complex8Puzzle", "complex8Puzzle", "complex8Puzzle",
+										"simple15Puzzle", "simple15Puzzle", "simple15Puzzle",
+										"complex15Puzzle"};
+		Heuristik[] heuristics = new Heuristik[]{h1, h2, h3, h1, h2, h3, h1, h2, h3, h3};
 
-            //4.4. Der Solver soll mal eine Lösung versuchen
-            SolveErg erg=solver.solve(h, problem);
+		for(int i=0; i<problems.length; i++) {
 
-            //4.5. Das Lösungsergebnis ausgeben
-            System.out.println(erg);
+			try
+			{
+		        MyPuzzleSolver solver=new MyPuzzleSolver();
 
-            //4.6. Falls wir eine Lösung gefunden haben, testen, ob
-            //1.) die Zugfolge gültig ist (d.h. es könnten ja auch Züge enthalten sein,
-            //    wie eine Rechts-Verschiebung im simple8Puzzle oben, die ist nicht
-            //    möglich, links vom leeren Feld gibt es keinen Stein, der nach rechts
-            //    gerückt werden kann.
-            //    In diesem Fall wirft der Test eine Exception
-            //2.) nach Ausführen der Zugfolge das Puzzle wirklich gelöst ist
-            if(!erg.isUnsolvable())
-            {
-                if(Helper.isSolution(problem, erg.getSolution()))
-                    System.out.println("führt wirklich zum Ziel");
-                else
-                    System.out.println("Fehler: führt nicht zum Ziel");
-            }
-        }
-        catch(Exception ex)
-        {
-            System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
-        }
+				//4.1. welches Puzzle nehmen wir denn nun?
+				int[] problem=problems[i];
+				//4.2. Heuristik festlegen
+				Heuristik h=heuristics[i];
+
+				System.out.println("\n====================================================");
+				System.out.println("Puzzle "+names[i]+" with heuristic "+heuristics[i].name());
+
+				//4.3. Das Puzzle anzeigen (Console)
+				System.out.println(Helper.puzzleToString(problem));
+
+				//4.4. Der Solver soll mal eine Lösung versuchen
+				SolveErg erg=solver.solve(h, problem);
+
+				//4.5. Das Lösungsergebnis ausgeben
+				System.out.println(erg);
+
+				//4.6. Falls wir eine Lösung gefunden haben, testen, ob
+				//1.) die Zugfolge gültig ist (d.h. es könnten ja auch Züge enthalten sein,
+				//    wie eine Rechts-Verschiebung im simple8Puzzle oben, die ist nicht
+				//    möglich, links vom leeren Feld gibt es keinen Stein, der nach rechts
+				//    gerückt werden kann.
+				//    In diesem Fall wirft der Test eine Exception
+				//2.) nach Ausführen der Zugfolge das Puzzle wirklich gelöst ist
+				if(!erg.isUnsolvable())
+				{
+					if(Helper.isSolution(problem, erg.getSolution()))
+						System.out.println("führt wirklich zum Ziel");
+					else
+						System.out.println("Fehler: führt nicht zum Ziel");
+				}
+			}
+			catch(Exception ex)
+			{
+				System.out.println("Fehler: "+ex.toString()+"\n"+ex.getStackTrace());
+			}
+		}
 
     }
 }
